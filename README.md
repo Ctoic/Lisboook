@@ -60,6 +60,74 @@ LisBook is all about **simplicity and convenience**, making your audiobook journ
 
 ---
 
+## 🏠 Interactive Homepage
+
+The new web app homepage (`apps/web`) is built to feel alive: things move, react to your cursor, and invite you to explore.
+
+<div align="center">
+
+<img src="Images/homepage/hero.jpg" alt="Animated Lisbook hero with rotating headline and floating covers" width="32%" />
+<img src="Images/homepage/coming-soon-shelf.jpg" alt="Coming soon shelf with genre tabs" width="32%" />
+<img src="Images/homepage/coming-soon-toast.jpg" alt="Coming soon toast after clicking a book" width="32%" />
+
+*Hero · Coming-soon shelf · "Coming soon" toast*
+
+</div>
+
+### ✨ What's new
+
+<table>
+<tr>
+<td width="50%">
+
+🎬 **Animations**
+- 🌀 **Hero entrance**: headline, search and buttons rise in one after another
+- 🔤 **Rotating headline**: "Stories that move *with you / your mind / your mornings / the world*"
+- 📚 **Floating cover stack** that drifts with your mouse (parallax), plus a glowing halo and sparkles
+- 🔢 **Count-up stats** when the library numbers scroll into view
+- 🪄 **Scroll reveal** for every section, with staggered tiles and steps
+
+</td>
+<td width="50%">
+
+📖 **Coming-soon books**
+- 🗂️ **22 placeholder audiobooks** across Classics, Adventure, Mystery, Science & Ideas and Poetry & Myth
+- 🏷️ **Genre tabs** that swap shelves with a staggered card animation
+- 🎴 **3D tilt cards** with a cursor-following glare, a "Coming soon" ribbon and a pulsing status (*In the studio*, *Being narrated*, *Final edit*)
+- 🎞️ **Endless cover marquee**: two rows scrolling in opposite directions, paused on hover
+- 🔔 **Click any upcoming book** to get a "Coming soon" toast telling you it will be added shortly
+
+</td>
+</tr>
+</table>
+
+♿ Respects `prefers-reduced-motion`: visitors who turn off motion get a calm, fully visible page.
+
+### 🛠️ Tools & tech used
+
+| Tool | How it's used |
+| --- | --- |
+| **Next.js 15 (App Router)** | Server-rendered homepage, with small client components for interactivity |
+| **React 19 + TypeScript** | `RevealObserver`, `CountUp`, `ParallaxStage`, `RotatingWord`, `UpcomingShelves`, `ComingSoonCard`, `CoverMarquee` |
+| **Plain CSS** (Lisbook glass design system) | Keyframe animations, 3D `perspective` tilt, mask-faded marquee; no animation library added |
+| **Browser APIs** | `IntersectionObserver` (scroll reveal, count-up), Pointer Events + `requestAnimationFrame` (parallax and tilt) |
+| **Existing toast provider** | Shows the "Coming soon" notification |
+| **Claude Code** | Built the feature and checked it in the in-app browser preview (screenshots above) |
+
+### 📁 Where the code lives
+
+- `apps/web/app/page.tsx`: homepage layout
+- `apps/web/components/home/motion.tsx`: reveal, count-up, parallax and rotating-word helpers
+- `apps/web/components/home/coming-soon.tsx`: shelves, tilt cards and cover marquee
+- `apps/web/lib/upcoming-books.ts`: the placeholder book list (edit this to change the upcoming titles)
+- `apps/web/app/globals.css`: the "Home motion & coming-soon shelves" section
+
+```bash
+npm run dev:web
+```
+
+---
+
 ## 🎃 Hacktoberfest Contribution Guide
 
 <div align="center">
