@@ -3,20 +3,23 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import type { CreatorProfileContract, SagaSummaryContract } from "@lisbook/types";
+import type { CreatorProfileContract, InkRankContract, SagaSummaryContract } from "@lisbook/types";
 import { EmptyState } from "@/components/states";
 import { Button } from "@/components/ui/button";
 import { AlertIcon, BookIcon, LayersIcon, PlusIcon, QuillIcon, RefreshIcon, SparkleIcon, UserIcon } from "@/components/ui/icons";
 import { Modal } from "@/components/ui/modal";
 import { formatWords, sagaForms, type InkverseClient } from "@/lib/inkverse-client";
+import { RankCard } from "./creator-page";
 import { SagaFields, type SagaDraft } from "./saga-fields";
 
-const comingSoon = [
-  { name: "The Loom", hint: "Weave scenes and plot threads on a visual board", icon: <LayersIcon size={20} /> },
-  { name: "The Soulforge", hint: "Forge characters and interview them in their own voice", icon: <UserIcon size={20} /> },
-  { name: "The Lantern Press", hint: "Publish your Saga as a Lisbook book", icon: <BookIcon size={20} /> },
-  { name: "The Campfire", hint: "Share wild ideas, debate and build stories together", icon: <SparkleIcon size={20} /> }
-];
+function hubLinks(quillName: string) {
+  return [
+    { name: "The Debut Shelf", hint: "Read and listen to published Inkverse books", href: "/inkverse/library", icon: <BookIcon size={20} /> },
+    { name: "The Campfire", hint: "Share Sparks, argue in Duels, write Round Robin tales", href: "/campfire", icon: <SparkleIcon size={20} /> },
+    { name: "Your creator page", hint: "Your rank, badges and published books", href: `/creators/${encodeURIComponent(quillName)}`, icon: <UserIcon size={20} /> },
+    { name: "The Loom", hint: "Open a Saga, then weave its plot on the board", href: "#sagas", icon: <LayersIcon size={20} /> }
+  ];
+}
 
 export function timeAgo(iso: string) {
   const seconds = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
@@ -105,6 +108,7 @@ export function Inkwell({ api, profile }: { api: InkverseClient; profile: Creato
   const [sagas, setSagas] = useState<SagaSummaryContract[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [ranks, setRanks] = useState<InkRankContract | null>(null);
 
   function load() {
     setError(null);
@@ -112,6 +116,9 @@ export function Inkwell({ api, profile }: { api: InkverseClient; profile: Creato
   }
 
   useEffect(load, [api]);
+  useEffect(() => {
+    api.ranks().then(setRanks, () => undefined);
+  }, [api]);
 
   const totalWords = sagas?.reduce((sum, s) => sum + s.wordCount, 0) ?? 0;
   const totalChapters = sagas?.reduce((sum, s) => sum + s.folioCount, 0) ?? 0;
@@ -146,7 +153,13 @@ export function Inkwell({ api, profile }: { api: InkverseClient; profile: Creato
         </div>
       </div>
 
-      <section className="section section--tight">
+      {ranks ? (
+        <div style={{ marginTop: 16 }}>
+          <RankCard ranks={ranks} compact />
+        </div>
+      ) : null}
+
+      <section className="section section--tight" id="sagas">
         <div className="section-head">
           <h2>Your Sagas</h2>
         </div>
@@ -199,18 +212,17 @@ export function Inkwell({ api, profile }: { api: InkverseClient; profile: Creato
 
       <section className="section section--tight">
         <div className="section-head">
-          <h2>Rising in the Inkverse</h2>
+          <h2>Across the Inkverse</h2>
         </div>
         <div className="ink-soon">
-          {comingSoon.map((item) => (
-            <div key={item.name} className="ink-soon__item glass">
+          {hubLinks(profile.quillName).map((item) => (
+            <Link key={item.name} href={item.href} className="ink-soon__item glass glass--interactive">
               <span className="ink-soon__icon">{item.icon}</span>
               <div>
                 <strong>{item.name}</strong>
                 <p className="muted">{item.hint}</p>
               </div>
-              <span className="badge">Soon</span>
-            </div>
+            </Link>
           ))}
         </div>
       </section>

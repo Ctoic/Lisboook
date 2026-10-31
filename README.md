@@ -106,20 +106,6 @@ git push origin feature/your-amazing-feature
 - 💡 Check existing issues for contribution ideas
 - 🎨 Feel free to suggest improvements!
 
-<div align="center">
-
-### 🏅 **Hall of Fame** 🏅
-
-[![Contributors](https://contrib.rocks/image?repo=Ctoic/Lisbook)](https://github.com/Ctoic/Lisbook/graphs/contributors)
-
-*Each contributor has made LisBook more amazing! Thank you for being part of our journey.* 💜
-
-**Want to join this amazing community?** [Start contributing today!](#-hacktoberfest-contribution-guide) 🚀
-
-</div>
-
----
-
 ## 📄 License
 
 This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.

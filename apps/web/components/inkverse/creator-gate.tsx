@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { EmptyState } from "@/components/states";
-import { Button } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { QuillIcon } from "@/components/ui/icons";
 import { useInkverse, type InkverseClient } from "@/lib/inkverse-client";
 import { useAuth } from "@/providers/auth-provider";
@@ -52,6 +52,12 @@ export function CreatorGate({ children }: { children: (api: InkverseClient) => R
               <Button variant="glass" onClick={() => openSignIn("Sign in to keep writing in the Inkverse.")}>
                 Sign in
               </Button>
+              <ButtonLink href="/inkverse/library" variant="ghost">
+                Read the Debut Shelf
+              </ButtonLink>
+              <ButtonLink href="/campfire" variant="ghost">
+                Visit the Campfire
+              </ButtonLink>
             </>
           }
         />

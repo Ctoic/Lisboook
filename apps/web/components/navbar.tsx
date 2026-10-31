@@ -14,6 +14,7 @@ const links = [
   { href: "/", label: "Home" },
   { href: "/explore", label: "Explore" },
   { href: "/inkverse", label: "Inkverse" },
+  { href: "/campfire", label: "Campfire" },
   { href: "/scan", label: "Scan" },
   { href: "/about", label: "About" },
   { href: "/faq", label: "FAQ" },
