@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { AudiobookListItemContract } from "@lisbook/types";
 import { BookCard } from "@/components/book-card";
+import { CoverMarquee, UpcomingShelves } from "@/components/home/coming-soon";
+import { CountUp, ParallaxStage, RevealObserver, RotatingWord } from "@/components/home/motion";
 import { NewsletterForm } from "@/components/newsletter-form";
 import { UnavailableState } from "@/components/states";
 import { ButtonLink } from "@/components/ui/button";
@@ -17,6 +19,8 @@ import {
 } from "@/components/ui/icons";
 import { getCatalog } from "@/lib/api";
 import { formatCompactDuration, plural } from "@/lib/format";
+import { revealDelay } from "@/lib/reveal";
+import { upcomingBooks } from "@/lib/upcoming-books";
 
 const steps = [
   {
@@ -36,16 +40,27 @@ const steps = [
 function HeroStage({ books }: { books: AudiobookListItemContract[] }) {
   const [a, b, c] = books;
   const spotlight = c ?? a;
+  // Until the catalog has three titles, fill the stack with upcoming covers.
+  const stack = [0, 1, 2].map((i) => {
+    const book = books[i];
+    if (book) return { key: book.id, title: book.title, author: book.authorName, slug: book.slug, coverUrl: book.coverUrl };
+    const soon = upcomingBooks[i * 5];
+    return { key: soon.slug, title: soon.title, author: soon.author, slug: soon.slug, coverUrl: null };
+  });
   return (
-    <div className="hero__stage" aria-hidden={!spotlight}>
-      <div className="hero__stack">
-        {[a, b, c].map((book, i) =>
-          book ? (
-            <div key={book.id} className={`hero__book hero__book--${i + 1}`}>
-              <Cover title={book.title} author={book.authorName} slug={book.slug} coverUrl={book.coverUrl} />
+    <ParallaxStage className="hero__stage">
+      <span className="hero__halo" aria-hidden />
+      <span className="hero__spark hero__spark--1" aria-hidden />
+      <span className="hero__spark hero__spark--2" aria-hidden />
+      <span className="hero__spark hero__spark--3" aria-hidden />
+      <div className="hero__stack" aria-hidden>
+        {stack.map((book, i) => (
+          <div key={book.key} className={`hero__book hero__book--${i + 1}`}>
+            <div className="hero__book-inner">
+              <Cover title={book.title} author={book.author} slug={book.slug} coverUrl={book.coverUrl} />
             </div>
-          ) : null
-        )}
+          </div>
+        ))}
       </div>
       {spotlight ? (
         <Link href={`/books/${spotlight.slug}`} className="now-card glass glass--strong glass--interactive">
@@ -66,7 +81,7 @@ function HeroStage({ books }: { books: AudiobookListItemContract[] }) {
           </span>
         </Link>
       ) : null}
-    </div>
+    </ParallaxStage>
   );
 }
 
@@ -89,11 +104,12 @@ export default async function HomePage() {
 
   return (
     <>
+      <RevealObserver />
       <section className="shell hero">
-        <div>
+        <div className="hero__intro">
           <span className="eyebrow">Free audiobooks · No ads</span>
           <h1>
-            Stories that move <span className="gradient-text">with you.</span>
+            Stories that move <RotatingWord words={["with you.", "your mind.", "your mornings.", "the world."]} />
           </h1>
           <p className="hero__lead">
             Lisbook turns timeless books and big ideas into beautifully simple listening. Press play on your commute, your
@@ -121,6 +137,10 @@ export default async function HomePage() {
         <HeroStage books={spotlight} />
       </section>
 
+      <section className="section--tight marquee-section" data-reveal>
+        <CoverMarquee />
+      </section>
+
       {catalog.error ? (
         <section className="shell section">
           <UnavailableState retryHref="/" />
@@ -128,9 +148,11 @@ export default async function HomePage() {
       ) : (
         <>
           <section className="shell section--tight">
-            <div className="stats glass" aria-label="Library at a glance">
+            <div className="stats glass" aria-label="Library at a glance" data-reveal>
               <div className="stat">
-                <p className="stat__value">{books.length}</p>
+                <p className="stat__value">
+                  <CountUp value={books.length} />
+                </p>
                 <p className="stat__label">{books.length === 1 ? "Audiobook" : "Audiobooks"}</p>
               </div>
               <div className="stat">
@@ -138,17 +160,21 @@ export default async function HomePage() {
                 <p className="stat__label">Of listening</p>
               </div>
               <div className="stat">
-                <p className="stat__value">{authors}</p>
+                <p className="stat__value">
+                  <CountUp value={authors} />
+                </p>
                 <p className="stat__label">{authors === 1 ? "Author" : "Authors"}</p>
               </div>
               <div className="stat">
-                <p className="stat__value">100%</p>
+                <p className="stat__value">
+                  <CountUp value={100} />%
+                </p>
                 <p className="stat__label">Free to listen</p>
               </div>
             </div>
           </section>
 
-          <section className="shell section">
+          <section className="shell section" data-reveal>
             <div className="section-head">
               <div>
                 <span className="eyebrow">Hand-picked</span>
@@ -171,7 +197,7 @@ export default async function HomePage() {
           </section>
 
           {categories.length ? (
-            <section className="shell section">
+            <section className="shell section" data-reveal>
               <div className="section-head">
                 <div>
                   <span className="eyebrow">Browse</span>
@@ -179,8 +205,8 @@ export default async function HomePage() {
                 </div>
               </div>
               <div className="grid grid--3">
-                {categories.map(([name, count]) => (
-                  <Link key={name} href={`/explore?category=${encodeURIComponent(name)}`} className="tile glass glass--interactive">
+                {categories.map(([name, count], i) => (
+                  <Link key={name} href={`/explore?category=${encodeURIComponent(name)}`} className="tile glass glass--interactive" data-reveal style={revealDelay(i)}>
                     <span className="tile__glow" style={{ background: coverGradient(name.toLowerCase()) }} />
                     <span className="tile__icon">
                       <LayersIcon size={22} />
@@ -200,6 +226,20 @@ export default async function HomePage() {
         </>
       )}
 
+      <section className="shell section soon-section" id="coming-soon" data-reveal>
+        <span className="soon-section__glow" aria-hidden />
+        <div className="section-head">
+          <div>
+            <span className="eyebrow">
+              <SparkleIcon size={14} /> In the studio
+            </span>
+            <h2 style={{ marginTop: 10 }}>Coming soon to Lisbook</h2>
+            <p>Our narrators are recording these right now. Pick a genre, tap a book, and see what&apos;s next.</p>
+          </div>
+        </div>
+        <UpcomingShelves />
+      </section>
+
       <section className="shell section" id="how-it-works">
         <div className="section-head">
           <div>
@@ -209,7 +249,7 @@ export default async function HomePage() {
         </div>
         <div className="grid grid--3">
           {steps.map((step, i) => (
-            <article key={step.title} className="step glass glass--pad sheen">
+            <article key={step.title} className="step glass glass--pad sheen" data-reveal style={revealDelay(i, 120)}>
               <span className="step__num">{i + 1}</span>
               <h3>{step.title}</h3>
               <p className="muted">{step.body}</p>
@@ -219,7 +259,7 @@ export default async function HomePage() {
       </section>
 
       <section className="shell section">
-        <div className="cta glass sheen">
+        <div className="cta glass sheen" data-reveal>
           <span className="cta__orb" aria-hidden />
           <div>
             <span className="eyebrow">

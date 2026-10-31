@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "web",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["--workspace=@lisbook/web", "next", "dev", "--port", "3005"],
+      "runtimeExecutable": "env",
+      "runtimeArgs": ["NEXT_DIST_DIR=.next-preview", "npx", "--workspace=@lisbook/web", "next", "dev", "--port", "3005"],
       "port": 3005
     }
   ]
