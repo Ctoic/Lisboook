@@ -1,0 +1,35 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./*"
+      ],
+      "@lisbook/ui": [
+        "../../packages/ui/src/index.ts"
+      ],
+      "@lisbook/ui/*": [
+        "../../packages/ui/src/*"
+      ],
+      "@lisbook/types": [
+        "../../packages/types/src/index.ts"
+      ]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "next-env.d.ts",
+    ".next-qa/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

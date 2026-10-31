@@ -1,0 +1,27 @@
+{
+  "name": "lisbook-platform",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "npm@10.8.2",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "dev:web": "npm run dev --workspace=@lisbook/web",
+    "dev:admin": "npm run dev --workspace=@lisbook/admin",
+    "dev:api": "npm run start:dev --workspace=@lisbook/api",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "test:e2e": "npm run test:e2e --workspace=@lisbook/api",
+    "db:migrate": "npm run prisma --workspace=@lisbook/api -- migrate dev",
+    "db:seed": "npm run prisma --workspace=@lisbook/api -- db seed",
+    "api:openapi": "npm run openapi --workspace=@lisbook/api"
+  },
+  "devDependencies": {
+    "turbo": "^2.1.3",
+    "typescript": "^5.5.4"
+  }
+}

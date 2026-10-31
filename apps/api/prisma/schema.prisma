@@ -1,0 +1,660 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum EntityStatus {
+  draft
+  published
+  archived
+}
+
+enum Visibility {
+  public
+  private
+  unlisted
+}
+
+enum CommentStatus {
+  pending
+  approved
+  rejected
+  hidden
+}
+
+enum SagaForm {
+  novel
+  novella
+  short_story
+  serial
+}
+
+enum AtlasKind {
+  place
+  lore
+  faction
+  event
+}
+
+enum FolioStatus {
+  draft
+  revising
+  done
+}
+
+enum UserStatus {
+  active
+  invited
+  suspended
+}
+
+model User {
+  id                  String                @id @default(cuid())
+  email               String                @unique
+  passwordHash        String?
+  displayName         String
+  avatarUrl           String?
+  status              UserStatus            @default(active)
+  preferredLanguage   String                @default("en")
+  themePreference     String                @default("dark")
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  roles               UserRole[]
+  sessions            UserSession[]
+  comments            Comment[]
+  favorites           Favorite[]
+  listeningProgress   ListeningProgress[]
+  ratings             Rating[]
+  shares              Share[]
+  auditLogs           AdminAuditLog[]
+  scannerJobs         ScannerJob[]
+  authoredAudiobooks  Audiobook[]           @relation("AudiobookCreatedBy")
+  updatedAudiobooks   Audiobook[]           @relation("AudiobookUpdatedBy")
+  creatorProfile      CreatorProfile?
+  sagas               Saga[]
+  campfirePosts       CampfirePost[]
+  campfireReplies     CampfireReply[]
+  campfireReactions   CampfireReaction[]
+}
+
+model Role {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  description String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  users       UserRole[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  key         String           @unique
+  description String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  roles       RolePermission[]
+}
+
+model UserRole {
+  userId     String
+  roleId     String
+  assignedAt DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model UserSession {
+  id           String   @id @default(cuid())
+  userId       String
+  refreshToken String   @unique
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Author {
+  id          String               @id @default(cuid())
+  name        String
+  slug        String               @unique
+  bio         String?
+  imageAssetId String?
+  status      EntityStatus         @default(draft)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  audiobooks  AudiobookAuthor[]
+}
+
+model Narrator {
+  id           String                @id @default(cuid())
+  name         String
+  slug         String                @unique
+  bio          String?
+  imageAssetId String?
+  status       EntityStatus          @default(draft)
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  audiobooks   AudiobookNarrator[]
+}
+
+model Category {
+  id          String            @id @default(cuid())
+  name        String
+  slug        String            @unique
+  description String?
+  status      EntityStatus      @default(draft)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  audiobooks  Audiobook[]
+}
+
+model Tag {
+  id         String         @id @default(cuid())
+  name       String
+  slug       String         @unique
+  createdAt  DateTime       @default(now())
+  audiobooks AudiobookTag[]
+}
+
+model ImageAsset {
+  id              String      @id @default(cuid())
+  storageKey      String      @unique
+  sourceUrl       String?
+  mimeType        String
+  fileSizeBytes   Int?
+  checksum        String?
+  processingStatus String     @default("ready")
+  createdAt       DateTime    @default(now())
+  audiobooks      Audiobook[]
+}
+
+model AudioAsset {
+  id               String     @id @default(cuid())
+  storageKey       String     @unique
+  sourceUrl        String?
+  mimeType         String
+  fileSizeBytes    Int?
+  bitrateKbps      Int?
+  durationSeconds  Int        @default(0)
+  waveformJson     String?
+  checksum         String?
+  processingStatus String     @default("ready")
+  createdAt        DateTime   @default(now())
+  chapters         Chapter[]
+}
+
+model Audiobook {
+  id                  String                @id @default(cuid())
+  slug                String                @unique
+  title               String
+  subtitle            String?
+  description         String
+  shortDescription    String?
+  isbn                String?
+  language            String                @default("en")
+  status              EntityStatus          @default(draft)
+  visibility          Visibility            @default(public)
+  coverAssetId        String?
+  categoryId          String?
+  publisherName       String?
+  releaseDate         DateTime?
+  totalDurationSeconds Int                  @default(0)
+  isFeatured          Boolean               @default(false)
+  seoTitle            String?
+  seoDescription      String?
+  createdById         String?
+  updatedById         String?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  category            Category?             @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  coverAsset          ImageAsset?           @relation(fields: [coverAssetId], references: [id], onDelete: SetNull)
+  chapters            Chapter[]
+  authors             AudiobookAuthor[]
+  narrators           AudiobookNarrator[]
+  tags                AudiobookTag[]
+  favorites           Favorite[]
+  progress            ListeningProgress[]
+  comments            Comment[]
+  ratings             Rating[]
+  shares              Share[]
+  recommendationRules RecommendationRule[]
+  scannerJobs         ScannerJob[]
+  scannerMatches      ScannerMatch[]
+  createdBy           User?                 @relation("AudiobookCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy           User?                 @relation("AudiobookUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+}
+
+model AudiobookAuthor {
+  audiobookId String
+  authorId    String
+  audiobook   Audiobook @relation(fields: [audiobookId], references: [id], onDelete: Cascade)
+  author      Author    @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@id([audiobookId, authorId])
+}
+
+model AudiobookNarrator {
+  audiobookId String
+  narratorId  String
+  audiobook   Audiobook @relation(fields: [audiobookId], references: [id], onDelete: Cascade)
+  narrator    Narrator  @relation(fields: [narratorId], references: [id], onDelete: Cascade)
+
+  @@id([audiobookId, narratorId])
+}
+
+model AudiobookTag {
+  audiobookId String
+  tagId       String
+  audiobook   Audiobook @relation(fields: [audiobookId], references: [id], onDelete: Cascade)
+  tag         Tag       @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([audiobookId, tagId])
+}
+
+model Chapter {
+  id               String     @id @default(cuid())
+  audiobookId      String
+  title            String
+  chapterNumber    Int
+  description      String?
+  durationSeconds  Int        @default(0)
+  audioAssetId     String?
+  previewStartSeconds Int?
+  previewEndSeconds   Int?
+  isPreview        Boolean    @default(false)
+  sortOrder        Int        @default(0)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  audiobook        Audiobook  @relation(fields: [audiobookId], references: [id], onDelete: Cascade)
+  audioAsset       AudioAsset? @relation(fields: [audioAssetId], references: [id], onDelete: SetNull)
+  progress         ListeningProgress[]
+}
+
+model Favorite {
+  userId      String
+  audiobookId String
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  audiobook   Audiobook @relation(fields: [audiobookId], references: [id], onDelete: Cascade)
+
+  @@id([userId, audiobookId])
+}
+
+model ListeningProgress {
+  id                String    @id @default(cuid())
+  userId            String
+  audiobookId       String
+  chapterId         String
+  positionSeconds   Int       @default(0)
+  completionPercent Int       @default(0)
+  lastListenedAt    DateTime  @default(now())
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  audiobook         Audiobook @relation(fields: [audiobookId], references: [id], onDelete: Cascade)
+  chapter           Chapter   @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, chapterId])
+}
+
+model Comment {
+  id              String        @id @default(cuid())
+  audiobookId     String
+  userId          String
+  body            String
+  status          CommentStatus @default(pending)
+  parentCommentId String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  audiobook       Audiobook     @relation(fields: [audiobookId], references: [id], onDelete: Cascade)
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Rating {
+  id          String    @id @default(cuid())
+  audiobookId String
+  userId      String
+  value       Int
+  createdAt   DateTime  @default(now())
+  audiobook   Audiobook @relation(fields: [audiobookId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, audiobookId])
+}
+
+model Share {
+  id          String    @id @default(cuid())
+  audiobookId String
+  userId      String?
+  channel     String
+  createdAt   DateTime  @default(now())
+  audiobook   Audiobook @relation(fields: [audiobookId], references: [id], onDelete: Cascade)
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model Page {
+  id              String       @id @default(cuid())
+  slug            String       @unique
+  title           String
+  metaTitle       String?
+  metaDescription String?
+  contentJson     String
+  status          EntityStatus @default(draft)
+  locale          String       @default("en")
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+model Faq {
+  id         String       @id @default(cuid())
+  question   String
+  answer     String
+  sortOrder  Int          @default(0)
+  status     EntityStatus @default(draft)
+  locale     String       @default("en")
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+}
+
+model NavigationItem {
+  id        String   @id @default(cuid())
+  label     String
+  href      String
+  sortOrder Int      @default(0)
+  locale    String   @default("en")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SiteSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  valueJson String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model NewsletterSubscriber {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  source       String?
+  subscribedAt DateTime @default(now())
+}
+
+model AdminAuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  action      String
+  entityType  String
+  entityId    String
+  beforeJson  String?
+  afterJson   String?
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+  actorUser   User?    @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+}
+
+model ScannerJob {
+  id                String   @id @default(cuid())
+  userId            String?
+  inputAssetId      String?
+  status            String   @default("queued")
+  recognizedText    String?
+  confidenceScore   Float?
+  matchedAudiobookId String?
+  errorMessage      String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  matchedAudiobook  Audiobook? @relation(fields: [matchedAudiobookId], references: [id], onDelete: SetNull)
+  matches           ScannerMatch[]
+}
+
+model ScannerMatch {
+  id           String   @id @default(cuid())
+  scannerJobId String
+  audiobookId  String
+  confidence   Float
+  createdAt    DateTime @default(now())
+  scannerJob   ScannerJob @relation(fields: [scannerJobId], references: [id], onDelete: Cascade)
+  audiobook    Audiobook  @relation(fields: [audiobookId], references: [id], onDelete: Cascade)
+}
+
+model RecommendationRule {
+  id          String    @id @default(cuid())
+  audiobookId String
+  label       String
+  ruleJson    String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  audiobook   Audiobook @relation(fields: [audiobookId], references: [id], onDelete: Cascade)
+}
+
+// ---------- Inkverse: the creator side of Lisbook ----------
+
+model CreatorProfile {
+  userId    String   @id
+  quillName String   @unique
+  bio       String?
+  genres    String[]
+  goal          String?
+  streakDays    Int      @default(0)
+  longestStreak Int      @default(0)
+  lastWriteDay  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Saga {
+  id         String       @id @default(cuid())
+  ownerId    String
+  title      String
+  logline    String?
+  genre      String?
+  form       SagaForm     @default(novel)
+  visibility Visibility   @default(private)
+  status     EntityStatus @default(draft)
+  // Lantern Press: set when the Saga is published to the Debut Shelf.
+  slug        String?   @unique
+  tagline     String?
+  blurb       String?
+  coverStyle  Int       @default(0)
+  publishedAt DateTime?
+  // The Loom board ({ shards, threads }) and the Hearth voice casting, stored as documents.
+  loom        Json?
+  hearth      Json?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  owner      User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  folios     Folio[]
+  souls      Soul[]
+  bonds      SoulBond[]
+  atlas      AtlasEntry[]
+
+  @@index([ownerId, updatedAt])
+}
+
+model Folio {
+  id        String          @id @default(cuid())
+  sagaId    String
+  title     String
+  sortOrder Int             @default(0)
+  status    FolioStatus     @default(draft)
+  content   String          @default("")
+  wordCount Int             @default(0)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  saga      Saga            @relation(fields: [sagaId], references: [id], onDelete: Cascade)
+  snapshots FolioSnapshot[]
+  mentions  EntityMention[]
+
+  @@index([sagaId, sortOrder])
+}
+
+model FolioSnapshot {
+  id        String   @id @default(cuid())
+  folioId   String
+  label     String?
+  content   String
+  wordCount Int      @default(0)
+  createdAt DateTime @default(now())
+  folio     Folio    @relation(fields: [folioId], references: [id], onDelete: Cascade)
+
+  @@index([folioId, createdAt])
+}
+
+// ---------- Inkverse Phase 2: Souls & Realms ----------
+
+model Soul {
+  id          String          @id @default(cuid())
+  sagaId      String
+  name        String
+  aliases     String[]
+  role        String          @default("supporting")
+  summary     String?
+  appearance  String?
+  personality String?
+  desires     String?
+  fears       String?
+  secrets     String?
+  voice       String?
+  arcStart    String?
+  arcEnd      String?
+  sortOrder   Int             @default(0)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  saga        Saga            @relation(fields: [sagaId], references: [id], onDelete: Cascade)
+  bondsFrom   SoulBond[]      @relation("BondFrom")
+  bondsTo     SoulBond[]      @relation("BondTo")
+  mentions    EntityMention[]
+
+  @@index([sagaId, sortOrder])
+}
+
+model SoulBond {
+  id         String   @id @default(cuid())
+  sagaId     String
+  fromSoulId String
+  toSoulId   String
+  kind       String
+  note       String?
+  createdAt  DateTime @default(now())
+  saga       Saga     @relation(fields: [sagaId], references: [id], onDelete: Cascade)
+  fromSoul   Soul     @relation("BondFrom", fields: [fromSoulId], references: [id], onDelete: Cascade)
+  toSoul     Soul     @relation("BondTo", fields: [toSoulId], references: [id], onDelete: Cascade)
+
+  @@unique([fromSoulId, toSoulId])
+  @@index([sagaId])
+}
+
+model AtlasEntry {
+  id          String          @id @default(cuid())
+  sagaId      String
+  kind        AtlasKind
+  name        String
+  aliases     String[]
+  summary     String?
+  details     String?
+  parentId    String?
+  era         String?
+  chronoOrder Int?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  saga        Saga            @relation(fields: [sagaId], references: [id], onDelete: Cascade)
+  parent      AtlasEntry?     @relation("AtlasNesting", fields: [parentId], references: [id], onDelete: SetNull)
+  children    AtlasEntry[]    @relation("AtlasNesting")
+  mentions    EntityMention[]
+
+  @@index([sagaId, kind])
+}
+
+// How often each Soul or Atlas entry is named in a chapter; rebuilt whenever text or names change.
+model EntityMention {
+  id           String      @id @default(cuid())
+  folioId      String
+  soulId       String?
+  atlasEntryId String?
+  count        Int
+  folio        Folio       @relation(fields: [folioId], references: [id], onDelete: Cascade)
+  soul         Soul?       @relation(fields: [soulId], references: [id], onDelete: Cascade)
+  atlasEntry   AtlasEntry? @relation(fields: [atlasEntryId], references: [id], onDelete: Cascade)
+
+  @@index([folioId])
+  @@index([soulId])
+  @@index([atlasEntryId])
+}
+
+// ---------- Inkverse Phases 6-7: The Campfire ----------
+
+enum CampfireKind {
+  spark
+  duel
+  tale
+  prompt
+}
+
+model CampfirePost {
+  id           String             @id @default(cuid())
+  authorId     String
+  kind         CampfireKind
+  title        String
+  body         String
+  sideA        String?
+  sideB        String?
+  tags         String[]
+  tavern       String             @default("general")
+  adoptedCount Int                @default(0)
+  pinned       Boolean            @default(false)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  author       User               @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  replies      CampfireReply[]
+  reactions    CampfireReaction[]
+
+  @@index([kind, createdAt])
+  @@index([tavern, createdAt])
+}
+
+model CampfireReply {
+  id        String             @id @default(cuid())
+  postId    String
+  authorId  String
+  body      String
+  side      String?
+  createdAt DateTime           @default(now())
+  post      CampfirePost       @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author    User               @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  reactions CampfireReaction[]
+
+  @@index([postId, createdAt])
+}
+
+// An Ember (upvote) on a post or reply, or a Duel vote ("vote_a" / "vote_b") on a post.
+model CampfireReaction {
+  id        String         @id @default(cuid())
+  userId    String
+  postId    String?
+  replyId   String?
+  kind      String
+  createdAt DateTime       @default(now())
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      CampfirePost?  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  reply     CampfireReply? @relation(fields: [replyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId, kind])
+  @@unique([userId, replyId, kind])
+}
